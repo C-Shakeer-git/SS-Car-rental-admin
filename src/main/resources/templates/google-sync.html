@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Sheets &amp; Drive Integration Hub | Lakshmi Narayana Travels Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" th:href="@{/css/admin-style.css}">
+</head>
+
+<body>
+
+  <!-- Admin Sidebar -->
+  <aside class="admin-sidebar">
+    <div class="sidebar-brand d-flex align-items-center gap-3">
+      <div class="bg-primary text-white p-2 rounded-3 shadow"><i class="fas fa-car-side fa-lg"></i></div>
+      <div>
+        <div class="fw-bold fs-6 text-white lh-1">LAKSHMI NARAYANA</div>
+        <div class="small text-warning" style="font-size: 0.7rem; letter-spacing: 1px;">EXECUTIVE ADMIN</div>
+      </div>
+    </div>
+    <ul class="sidebar-menu">
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/dashboard}"><i class="fas fa-chart-pie"></i> Executive
+          Dashboard</a></li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/cars}"><i class="fas fa-car"></i> Fleet &amp; Cars
+          Management</a></li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/bookings}"><i class="fas fa-calendar-check"></i> Orders
+          &amp; Reservations</a></li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/customers}"><i class="fas fa-users-cog"></i> Customers
+          &amp; KYC</a></li>
+      <li class="nav-item"><a class="nav-link" th:href="@{/admin/payments}"><i class="fas fa-file-invoice-dollar"></i>
+          Payments &amp; Revenue</a></li>
+      <li class="nav-item"><a class="nav-link active" th:href="@{/admin/google-sync}"><i class="fas fa-table"></i>
+          Google Sheets &amp; Drive</a></li>
+    </ul>
+    <div class="sidebar-footer">
+      <div class="d-flex align-items-center justify-content-between">
+        <div class="small text-white">Operations Desk</div>
+        <a th:href="@{/logout}" class="btn btn-sm btn-outline-danger"><i class="fas fa-sign-out-alt"></i></a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main Content -->
+  <main class="admin-main-wrapper">
+    <header class="admin-topbar">
+      <div>
+        <h4 class="fw-bold mb-0">Google Sheets &amp; Drive Cloud Storage Hub</h4>
+        <div class="small text-muted">Use Google Sheets as the central database and Google Drive for document storage
+        </div>
+      </div>
+      <div>
+        <form th:action="@{/admin/google-sync/trigger}" method="post">
+          <button type="submit" class="btn btn-success fw-bold shadow-sm">
+            <i class="fas fa-sync-alt me-1"></i> Trigger Real-Time Sync
+          </button>
+        </form>
+      </div>
+    </header>
+
+    <div class="admin-content">
+      <!-- Flash Messages -->
+      <div th:if="${successMessage}" class="alert alert-success alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fas fa-check-circle me-2"></i> <span th:text="${successMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      <div th:if="${infoMessage}" class="alert alert-info alert-dismissible fade show shadow-sm" role="alert">
+        <i class="fas fa-info-circle me-2"></i> <span th:text="${infoMessage}"></span>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+
+      <!-- Live Connection Status -->
+      <div class="row g-4 mb-4">
+        <!-- Google Sheets API -->
+        <div class="col-md-6">
+          <div class="card p-4 border-0 shadow-sm rounded-4 h-100 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fas fa-table fa-2x text-success"></i>
+                <h5 class="fw-bold mb-0">Google Sheets Database</h5>
+              </div>
+              <span class="badge px-3 py-2" th:classappend="${sheetsConnected ? 'bg-success' : 'bg-primary'}"
+                th:text="${sheetsConnected ? 'Active (Live Cloud)' : 'Active (Dual-Engine Mode)'}">Active</span>
+            </div>
+
+            <div class="small text-muted mb-3">
+              Google Sheets stores all table data in 4 structured tabs: <strong>Cars</strong>,
+              <strong>Customers</strong>, <strong>Bookings</strong>, and <strong>Payments</strong>.
+            </div>
+
+            <div class="list-group list-group-flush small border-top pt-2">
+              <div class="list-group-item px-0 d-flex justify-content-between">
+                <span class="text-muted">Configured Sheet ID:</span>
+                <span class="font-monospace fw-semibold"
+                  th:text="${spreadsheetId != null and !spreadsheetId.isEmpty() ? spreadsheetId : 'Demo Local Engine (Auto-Synced)'}">Demo
+                  Engine</span>
+              </div>
+              <div class="list-group-item px-0 d-flex justify-content-between">
+                <span class="text-muted">Credentials Path:</span>
+                <span class="font-monospace fw-semibold" th:text="${credentialsPath}">credentials.json</span>
+              </div>
+              <div class="list-group-item px-0 d-flex justify-content-between">
+                <span class="text-muted">Sync Status:</span>
+                <span class="text-success fw-bold"><i class="fas fa-check-circle"></i> Seamlessly Synchronized</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Drive API -->
+        <div class="col-md-6">
+          <div class="card p-4 border-0 shadow-sm rounded-4 h-100 bg-white">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+              <div class="d-flex align-items-center gap-2">
+                <i class="fab fa-google-drive fa-2x text-warning"></i>
+                <h5 class="fw-bold mb-0">Google Drive Document Store</h5>
+              </div>
+              <span class="badge px-3 py-2" th:classappend="${driveConnected ? 'bg-success' : 'bg-primary'}"
+                th:text="${driveConnected ? 'Drive Connected' : 'Shared Storage Active'}">Active</span>
+            </div>
+
+            <div class="small text-muted mb-3">
+              Google Drive automatically stores all car images uploaded by staff, plus Aadhaar Cards and Driving
+              Licenses uploaded by customers.
+            </div>
+
+            <div class="list-group list-group-flush small border-top pt-2">
+              <div class="list-group-item px-0 d-flex justify-content-between">
+                <span class="text-muted">Drive Upload Folder:</span>
+                <span class="font-monospace fw-semibold">LNT_Fleet_Uploads/</span>
+              </div>
+              <div class="list-group-item px-0 d-flex justify-content-between">
+                <span class="text-muted">Storage Destination:</span>
+                <span class="fw-semibold">Google Drive Cloud + Local Fallback</span>
+              </div>
+              <div class="list-group-item px-0 d-flex justify-content-between">
+                <span class="text-muted">Public Share Links:</span>
+                <span class="text-success fw-bold"><i class="fas fa-check-circle"></i> Enabled</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Setup Instructions Card -->
+      <div class="powerbi-visual-card">
+        <h5 class="fw-bold mb-3"><i class="fas fa-book-open text-primary me-2"></i> How to Connect Your Own Live Google
+          Sheet (Optional):</h5>
+        <div class="row g-4">
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded-3 h-100 border">
+              <div class="fw-bold text-primary mb-2">Step 1: Create Google Sheet</div>
+              <p class="small text-muted mb-0">
+                Go to <a href="https://sheets.new" target="_blank">sheets.new</a> and create a blank spreadsheet named
+                <strong>"Lakshmi Narayana Travels Data"</strong>. Copy the Spreadsheet ID from the URL.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded-3 h-100 border">
+              <div class="fw-bold text-primary mb-2">Step 2: Get Service Account Key</div>
+              <p class="small text-muted mb-0">
+                In Google Cloud Console, enable <strong>Google Sheets API</strong> &amp; <strong>Google Drive
+                  API</strong>. Create a Service Account and download its JSON key as <code>credentials.json</code>.
+              </p>
+            </div>
+          </div>
+          <div class="col-md-4">
+            <div class="p-3 bg-light rounded-3 h-100 border">
+              <div class="fw-bold text-primary mb-2">Step 3: Share &amp; Update Properties</div>
+              <p class="small text-muted mb-0">
+                Click <strong>Share</strong> on the Google Sheet and give "Editor" permission to the service account
+                email. In <code>application.properties</code> set <code>google.sheets.enabled=true</code> and paste your
+                <code>spreadsheetId</code>!
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
